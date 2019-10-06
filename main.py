@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QFileDialog 
+from PyQt5.QtWidgets import QFileDialog, QApplication
 from UI.maingui import Ui_Form  # importing our generated file 
 import sys
 import os
@@ -51,8 +51,9 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
                     full_sub_name = sub[0]+"."+sub[1]
 
                     returncode = subprocess.Popen(self.mkvmerge_path +' -o "'+ dest_file_path +'" "'+ original_file +'" --forced-track "0:yes" --default-track "0:yes" --track-name "0:Arabic" --language "0:ara" "'+ full_sub_name +'"', stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-                    stdout_value = returncode.communicate()[0]                       
+                    stdout_value = returncode.communicate()[0]                    
                     self.ui.output_txt.setPlainText(stdout_value)
+                    QApplication.processEvents()
  
 
 if __name__ == "__main__":
