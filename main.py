@@ -26,9 +26,6 @@ for file in my_files :
 	elif ext in sub_ext :
 		sub_file.append([name, ext])
 
-
-#"B:\OneDrive\Portable applications\mkvtoolnix\mkvmerge.exe" -o "remux-%%~nxA" "%%~A" --forced-track "0:yes" --default-track "0:yes" --track-name "0:English" --language "0:eng" "%%~nA.srt" )
-
 for vid in video_file :
 	for sub in sub_file :
 		if vid[0] == sub[0] :
