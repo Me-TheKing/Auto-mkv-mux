@@ -152,7 +152,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
                 option_code = '" --forced-track "0:'+option_forced_track+'" --default-track "0:'+option_default_track+'" --track-name "0:'+option_track_name+'" --language "0:'+option_language+'" --sync "0:'+option_delay+'" '
             else:
                 option_code = '" --forced-track "0:'+option_forced_track+'" --default-track "0:'+option_default_track+'" --track-name "0:'+option_track_name+'" --sync "0:'+option_delay+'" '
-            print(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name)
+            
             returncode = subprocess.Popen(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
             ############################################            
             # the index 0 is to read only the stdout info
