@@ -13,7 +13,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         super(MyApp, self).__init__()
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-        ##### my set var ####        
+        ##### my Set Var ####        
         self.video_ext = ["mp4", "mkv", "avi"]
         self.sub_ext = ["srt", "ass", "txt", "ssa", "sub"]
         self.mkvmerge_path = "C:\\Program Files\\MKVToolNix\\mkvmerge.exe"
@@ -78,10 +78,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         option_track_name = str(self.ui.name_LE.text())
         option_language = str(self.ui.language_cbox.currentText())
         option_delay = str(self.ui.delay_LE.text())
-        option_code = '" --forced-track "0:'+option_forced_track+'" --default-track "0:'+option_default_track + \
-            '" --track-name "0:'+option_track_name+'" --language "0:' + \
-            option_language+'" --sync "0:'+option_delay+'" '
-
+        
         # set the output Folder        
         if len(self.ui.output_path_LE.text()) == 0:
             try:
@@ -90,7 +87,6 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
                 # directory already exists
                 # i need a massageBox warrning
                 pass
-
             dest_vid_path = "Done/"
         else:
             if path.isdir(self.ui.output_path_LE.text()):
@@ -100,60 +96,65 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
                 return
 
         # set video with there subs in 2D list
-        vidsub_lst = []
-        #print(self.sub_file)
+        vidsub_lst = []        
         for vid in self.video_file:
             subs_for_vid = []
             subs_for_vid.append(vid)
             for sub in self.sub_file:
-                if vid[0] == sub[0]:
+                if vid.split(".")[0] == sub.split(".")[0]:
                     subs_for_vid.append(sub)
             # check if the video has any sub(s)
-                if len(subs_for_vid) > 1 :
-                    vidsub_lst.append(subs_for_vid)       
-                    vidsub_lst.append(subs_for_vid)       
-        print(vidsub_lst)########################
-        # mux every sub(s) with there video
+            if len(subs_for_vid) > 1 :
+                vidsub_lst.append(subs_for_vid)
+            else:
+                print("no sub for this video!")      
+        ###################################################################################
+        ####   here start the main mux LOOP by making the vid_name and it's sub_name   ####
+        ###################################################################################
+        # select the sub(s) name for every video and but it in one lst 
         for a_vidsub in vidsub_lst:
             subs_vid_lst  = []
             for i in range(len(a_vidsub)-1) :
                 subs_vid_lst.append(a_vidsub[i+1])
             
-            # maybe i will call a func            
-            ##############################
-            print(subs_vid_lst)
+            # maybe i will call a func 
+            # use the sub(s) name in subs_vid_lst and make a one singel name to use in the subprocess
+            ##############################            
             sub_name = ""
             for a_sub in subs_vid_lst :
                 a_sub_split = a_sub.split(".") 
                 # name.ext               
                 if len(a_sub_split) == 2 :
-                    sub_name = sub_name + f' --language "0:ara" ' + a_sub
+                    sub_name = '"'+a_sub+'"'
                 # name.order.ext
                 elif len(a_sub_split) == 3 :
-                    sub_name = sub_name + " " + a_sub
+                    if len(sub_name) == 0 :
+                        sub_name = '--language "0:'+option_language+'" "'+a_sub+'"'
+                    else:
+                        sub_name = sub_name +" "+ ' --language "0:'+option_language+'" "'+a_sub+'"'
                 # name.order.team.ext
                 elif len(a_sub_split) == 4 :
-                    sub_name = sub_name + f' --track-name "0:{a_sub_split[2]}" ' + a_sub
+                    if len(sub_name) == 0 :
+                        sub_name = '--language "0:'+option_language+'" --track-name "0:'+a_sub_split[2]+'" "'+a_sub+'"'
+                    else:
+                        sub_name = sub_name +" "+ ' --language "0:'+option_language+'" --track-name "0:'+a_sub_split[2]+'" "'+a_sub+'"'
                 # name.order.team.lang.ext
                 elif len(a_sub_split) == 5 :
-                    if len(a_sub_split[2]) == 0:
-                        sub_name = sub_name + f' --language "0:{a_sub_split[3]}" ' + a_sub
+                    if len(sub_name) == 0 :
+                        sub_name = '--language "0:'+a_sub_split[3].lower()+'" --track-name "0:'+a_sub_split[2]+'" "'+a_sub+'"'
                     else:
-                        sub_name = sub_name + f' --language "0:{a_sub_split[3]}" --track-name "0:{a_sub_split[2]}" ' + a_sub
-
-            #print(sub_name)
+                        sub_name = sub_name +" "+ ' --language "0:'+a_sub_split[3].lower()+'" --track-name "0:'+a_sub_split[2]+'" "'+a_sub+'"'
+           
             vid_name = a_vidsub [0]
             full_dest_vid_path = dest_vid_path + vid_name            
-            #print(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "'+ vid_name + option_code +'"'+ sub_name +'"')
-            returncode = subprocess.Popen(
-                self.mkvmerge_path +
-                ' -o "' +
-                full_dest_vid_path +
-                '" "' +
-                vid_name +
-                option_code +
-                '"' + sub_name + '"',
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            ####### new change 03:49am 09-10-2019 ######
+            if len(subs_vid_lst) == 1 :
+                option_code = '" --forced-track "0:'+option_forced_track+'" --default-track "0:'+option_default_track+'" --track-name "0:'+option_track_name+'" --language "0:'+option_language+'" --sync "0:'+option_delay+'" '
+            else:
+                option_code = '" --forced-track "0:'+option_forced_track+'" --default-track "0:'+option_default_track+'" --track-name "0:'+option_track_name+'" --sync "0:'+option_delay+'" '
+            print(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name)
+            returncode = subprocess.Popen(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            ############################################            
             # the index 0 is to read only the stdout info
             stdout_value = returncode.communicate()[0]
             self.ui.output_PTE.setPlainText(
@@ -172,8 +173,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         msg.setStandardButtons(QMessageBox.Ok)
         msg.setDefaultButton(QMessageBox.Ok)
 
-        retval = msg.exec_()
-
+        msg.exec_()
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
