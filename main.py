@@ -36,9 +36,8 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         try:
             file_path = str(QFileDialog.getExistingDirectory(self, "Select Directory", options=QFileDialog.DontUseNativeDialog))
             self.ui.folder_path_LE.setText(file_path)
-            os.chdir(file_path)
-            my_files = os.listdir(file_path)
-            self.vid_sub_list(my_files)
+            self.ui.output_PTE.setPlainText("")
+            os.chdir(file_path)            
             self.ui.start_btn.setEnabled(True)
             self.ui.search_output_btn.setEnabled(True)
             self.ui.output_path_LE.setEnabled(True)
@@ -46,62 +45,23 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
            pass
 
     def vid_sub_list(self, my_files):
-        self.video_file = []
-        self.sub_file = []        
+        videos = []        
+        subs = []        
         for a_file in my_files:
-            split_name = a_file.split(".")
-            # name.ext
-            if len(split_name) == 2 :                
-                ext = split_name[1]
-            # name.order.ext
-            elif len(split_name) == 3 :               
-                ext = split_name[2]
-            # name.order.team.ext
-            elif len(split_name) == 4:                
-                ext = split_name[3]
-            # name.order.team.lang.ext
-            elif len(split_name) == 5 :
-                ext = split_name[4]
-            else:
-                # it is no file or file with no ext
-                ext = None
+            ext = a_file[-3:]
 
             if ext in self.video_ext:
-                self.video_file.append(a_file)
+                videos.append(a_file)
             elif ext in self.sub_ext:
-                self.sub_file.append(a_file)
+                subs.append(a_file)
 
-    def start_mux(self):
-        # read the options from the Ui_Form or ui
-        option_forced_track = str(self.ui.forced_cbox.currentText())
-        option_default_track = str(self.ui.default_cbox.currentText())
-        option_track_name = str(self.ui.name_LE.text())
-        option_language = str(self.ui.language_cbox.currentText())
-        option_delay = str(self.ui.delay_LE.text())        
-
-        # set the output Folder        
-        if len(self.ui.output_path_LE.text()) == 0:
-            try:
-                os.makedirs("Done")
-            except FileExistsError:
-                # directory already exists
-                # i need a massageBox warrning
-                pass
-
-            dest_vid_path = "Done/"
-        else:
-            if path.isdir(self.ui.output_path_LE.text()):
-                dest_vid_path = self.ui.output_path_LE.text() + "/"
-            else:
-                self.showdialog()
-                return
-
-        # set video with there subs in 2D list
+        # see if there is a sub file match the name of a video file 
+        # and then set a list with the video name and there sub(s) in 2D list
         vidsub_lst = []        
-        for vid in self.video_file:
+        for vid in videos:
             subs_for_vid = []
             subs_for_vid.append(vid)
-            for sub in self.sub_file:
+            for sub in subs:
                 if vid.split(".")[0] == sub.split(".")[0]:
                     subs_for_vid.append(sub)
             # check if the video has any sub(s)
@@ -109,17 +69,33 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
                 vidsub_lst.append(subs_for_vid)
             else:
                 print("no sub for this video!")
-                
+        
+        return (vidsub_lst)
+
+    def start_mux(self):       
+        # read the options from the Ui_Form or ui
+        option_forced_track = str(self.ui.forced_cbox.currentText())
+        option_default_track = str(self.ui.default_cbox.currentText())
+        option_track_name = str(self.ui.name_LE.text())
+        option_language = str(self.ui.language_cbox.currentText())
+        option_delay = str(self.ui.delay_LE.text())        
+
+        # the output folder
+        dest_vid_path = self.output_directory()
+        
+        # get the name of the video(s) and sub(s)
+        my_current_dic = os.getcwd()
+        my_files = os.listdir(my_current_dic)
+        # get a list for a video and it related sub(s) [[vid01,sub01a,sub01.b,...], [vid02,,sub02.a,sub02.b,...]]
+        vidsub_lst = self.vid_sub_list(my_files)
         ###################################################################################
         ####   here start the main mux LOOP by making the vid_name and it's sub_name   ####
         ###################################################################################
         # select the sub(s) name for every video and but it in one lst 
         for a_vidsub in vidsub_lst:
-            subs_vid_lst  = []
-            for i in range(len(a_vidsub)-1) :
-                subs_vid_lst.append(a_vidsub[i+1])
-                         
-            # use the sub(s) name in subs_vid_lst and make a one singel name to use in the subprocess
+            # set the name of "vid_name" and make a list of it sub(s) name
+            vid_name, *subs_vid_lst = a_vidsub             
+            # use the sub(s) name in subs_vid_lst and make a one singel name "sub_name" to use in the subprocess
             ##############################            
             sub_name = []
             for a_sub in subs_vid_lst :
@@ -130,25 +106,46 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
                 # name.order.team.ext
                 elif len(a_sub_split) == 4 :
                     sub_name.append('--language "0:'+option_language+'" --track-name "0:'+a_sub_split[2]+'" "'+a_sub+'"')                    
-                # name.order.team.lang.ext
-                elif len(a_sub_split) == 5 :
-                    sub_name.append('--language "0:'+a_sub_split[3].lower()+'" --track-name "0:'+a_sub_split[2]+'" "'+a_sub+'"')                    
+                # name.order.team.delay.ext
+                elif len(a_sub_split) == 5:
+                    sub_name.append('--track-name "0:' + a_sub_split[2] + '" --sync "0:' + a_sub_split[3] + '" "' + a_sub + '"')
+                # name.order.team.delay.lang.ext
+                elif len(a_sub_split) == 6:
+                    sub_name.append('--language "0:' + a_sub_split[4].lower() + '" --track-name "0:' + a_sub_split[2] + '" --sync "0:' + a_sub_split[3] + '" "' + a_sub + '"')                    
 
             sub_name = " ".join(sub_name)            
-            vid_name = a_vidsub [0]
             full_dest_vid_path = dest_vid_path + vid_name            
-            
             ####### new change 03:49am 09-10-2019 ######
-            option_code = '" --forced-track "0:'+option_forced_track+'" --default-track "0:'+option_default_track+'" --track-name "0:'+option_track_name+'" --sync "0:'+option_delay+'" '
-            #print(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name)
+            option_code = '" --forced-track "0:'+option_forced_track+'" --default-track "0:'+option_default_track+'" --track-name "0:'+option_track_name+'" --sync "0:'+option_delay+'" '            
             returncode = subprocess.Popen(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
             ############################################            
             # the index 0 is to read only the stdout info
             stdout_value = returncode.communicate()[0]
-            self.ui.output_PTE.setPlainText(
-                "vidsub_lst len :" + str(len(vidsub_lst)))
+            self.ui.output_PTE.setPlainText("vidsub_lst len :" + str(len(vidsub_lst)))
             self.ui.output_PTE.setPlainText(stdout_value)
             QApplication.processEvents()
+
+        self.complete_dialog(vidsub_lst)
+
+    def output_directory(self):
+        # set the output Folder        
+        if len(self.ui.output_path_LE.text()) == 0:
+            try:
+                os.makedirs("Done")
+            except FileExistsError:
+                # directory already exists
+                # i need a massageBox warrning
+                pass
+
+            output_path = "Done/"
+        else:
+            if path.isdir(self.ui.output_path_LE.text()):
+                output_path = self.ui.output_path_LE.text() + "/"
+            else:
+                self.showdialog()
+                return
+
+        return output_path
 
     def showdialog(self):        
         msg = QMessageBox()
@@ -158,6 +155,21 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         msg.setInformativeText("your path: " + self.ui.output_path_LE.text())
         msg.setWindowTitle("Path directory Error")
         msg.setDetailedText("Please check your Path Folder again. and for Better Result use the Search button.")
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.setDefaultButton(QMessageBox.Ok)
+
+        msg.exec_()
+
+    def complete_dialog(self, total_vid_lst):        
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setStyleSheet("QLabel{min-width: 200px;}")
+
+        msg.setText("Tha Mux Has Completed.")
+        msg.setInformativeText(f"You Have Mux {len(total_vid_lst)} mkv file.")
+        msg.setWindowTitle("Complete Massage")
+        video_names = "\n".join(t[0] for t in total_vid_lst)
+        msg.setDetailedText(video_names)
         msg.setStandardButtons(QMessageBox.Ok)
         msg.setDefaultButton(QMessageBox.Ok)
 
