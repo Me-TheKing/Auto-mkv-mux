@@ -117,12 +117,14 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
             full_dest_vid_path = dest_vid_path + vid_name            
             ####### new change 03:49am 09-10-2019 ######
             option_code = '" --forced-track "0:'+option_forced_track+'" --default-track "0:'+option_default_track+'" --track-name "0:'+option_track_name+'" --sync "0:'+option_delay+'" '            
-            returncode = subprocess.Popen(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            print(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name)
+            returncode = subprocess.Popen('"'+self.mkvmerge_path +'" -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
             ############################################            
             # the index 0 is to read only the stdout info
             stdout_value = returncode.communicate()[0]
-            self.ui.output_PTE.setPlainText("vidsub_lst len :" + str(len(vidsub_lst)))
-            self.ui.output_PTE.setPlainText(stdout_value)
+            print(stdout_value)
+            self.ui.output_PTE.appendPlainText("vidsub_lst len :" + str(len(vidsub_lst)))
+            self.ui.output_PTE.appendPlainText(stdout_value)
             QApplication.processEvents()
 
         self.complete_dialog(vidsub_lst)
