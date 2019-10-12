@@ -100,31 +100,13 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
             ##############################            
             sub_name = []
             for a_sub in subs_vid_lst :
-                # see why the add_quote not working with a_sub????
-                #self.add_quote(a_sub)
-                a_sub_split = a_sub.split(".")                
-                # name.ext OR name.order.ext          
-                if len(a_sub_split) in (2, 3):
-                    sub_name.append(f'--language 0:{option_language} "{a_sub}"')
-                # name.order.team.ext
-                elif len(a_sub_split) == 4 :
-                    sub_name.append(f'--language 0:{option_language} --track-name 0:{a_sub_split[2]} "{a_sub}"')
-                # name.order.team.delay.ext
-                elif len(a_sub_split) == 5:
-                    sync_val = 0 if a_sub_split[3]== "" else sync_val == a_sub_split[3]
-                    sub_name.append(f'--track-name 0:{a_sub_split[2]} --sync 0:{sync_val} "{a_sub}"')
-                # name.order.team.delay.lang.ext
-                elif len(a_sub_split) == 6:
-                    sync_val = 0 if a_sub_split[3]== "" else sync_val == a_sub_split[3]
-                    sub_name.append(f'--language 0:{a_sub_split[4].lower()} --track-name 0:{a_sub_split[2]} --sync 0:{sync_val} "{a_sub}"')
+                sub_name = self.sub_name_lst(a_sub, sub_name, option_language)
 
             sub_name = " ".join(sub_name)
             full_dest_vid_path = self.add_quote(dest_vid_path + vid_name)
             vid_name = self.add_quote(vid_name)            
             ####### new change 03:49am 09-10-2019 ######
-            option_code = f"--forced-track 0:{option_forced_track} --default-track 0:{option_default_track} --track-name 0:{option_track_name} --sync 0:{option_delay}"
-            #option_code = '" --forced-track "0:'+option_forced_track+'" --default-track "0:'+option_default_track+'" --track-name "0:'+option_track_name+'" --sync "0:'+option_delay+'" '
-            #print(self.mkvmerge_path +' -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name)
+            option_code = f"--forced-track 0:{option_forced_track} --default-track 0:{option_default_track} --track-name 0:{option_track_name} --sync 0:{option_delay}"            
             print(f"{self.mkvmerge_path} -o {full_dest_vid_path} {vid_name} {option_code} {sub_name}")
             returncode = subprocess.Popen(f"{self.mkvmerge_path} -o {full_dest_vid_path} {vid_name} {option_code} {sub_name}")
             #returncode = subprocess.Popen('"'+self.mkvmerge_path +'" -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
@@ -141,6 +123,27 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
     def add_quote(self, str_name):
         print(f'"{str_name}"')
         return f'"{str_name}"'
+
+    def sub_name_lst(self, a_sub, sub_name, option_language):
+        # see why the add_quote not working with a_sub????
+        #self.add_quote(a_sub)
+        a_sub_split = a_sub.split(".")                
+        # name.ext OR name.order.ext          
+        if len(a_sub_split) in (2, 3):
+            sub_name.append(f'--language 0:{option_language} "{a_sub}"')
+        # name.order.team.ext
+        elif len(a_sub_split) == 4 :
+            sub_name.append(f'--language 0:{option_language} --track-name 0:{a_sub_split[2]} "{a_sub}"')
+        # name.order.team.delay.ext
+        elif len(a_sub_split) == 5:
+            sync_val = 0 if a_sub_split[3]== "" else sync_val == a_sub_split[3]
+            sub_name.append(f'--track-name 0:{a_sub_split[2]} --sync 0:{sync_val} "{a_sub}"')
+        # name.order.team.delay.lang.ext
+        elif len(a_sub_split) == 6:
+            sync_val = 0 if a_sub_split[3]== "" else sync_val == a_sub_split[3]
+            sub_name.append(f'--language 0:{a_sub_split[4].lower()} --track-name 0:{a_sub_split[2]} --sync 0:{sync_val} "{a_sub}"')
+
+        return sub_name
 
     def output_directory(self):
         # set the output Folder        
