@@ -11,26 +11,23 @@ from UI.maingui import Ui_Form  # importing our generated file
 
 class External(QThread):
     """
-    Runs a counter thread.
+    Runs a mux thread and output the result in realtime.    
     """
     countChanged = pyqtSignal(str)
     signal_cmd = list()
+    finished = pyqtSignal(list)
 
-    def run(self):
-        #print(self.signal_cmd)
-        #########################################
-        #########################################
+    def run(self):        
         for cmd in self.signal_cmd :
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text = True)
             while True:
                 output = process.stdout.readline()
                 if output == '' and process.poll() is not None:
                     break
-                if output:
-                    #self.ui.output_PTE.appendPlainText(output.strip())
+                if output:                    
                     self.countChanged.emit(output.strip())
-
-        #self.complete_dialog(vidsub_lst)
+        
+        self.finished.emit(self.signal_cmd)
 
 class MyApp(QtWidgets.QMainWindow, Ui_Form):
     def __init__(self):
@@ -132,27 +129,15 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
             vid_name = self.add_quote(vid_name)            
             ####### new change 03:49am 09-10-2019 ######
             option_code = f"--forced-track 0:{option_forced_track} --default-track 0:{option_default_track} --track-name 0:{option_track_name} --sync 0:{option_delay}"
-
             cmds.append(f"{self.mkvmerge_path} -o {full_dest_vid_path} {vid_name} {option_code} {sub_name}")
-        print(cmds)
+        #########################################################
+        # making the mux thread and send the cmds to the thread #
+        #########################################################
         self.calc = External()
-        #self.calc.countChanged.connect(lambda: self.onCountChanged(cmd))
         self.calc.signal_cmd = cmds
         self.calc.countChanged.connect(self.onCountChanged)
+        self.calc.finished.connect(self.complete_dialog)
         self.calc.start()
-
-        #self.calc.wait()
-        #returncode = subprocess.Popen(f"{self.mkvmerge_path} -o {full_dest_vid_path} {vid_name} {option_code} {sub_name}")
-        #returncode = subprocess.Popen('"'+self.mkvmerge_path +'" -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-        ############################################
-        # the index 0 is to read only the stdout info
-        #stdout_value = returncode.communicate()[0]
-        #print(returncode.stdout)
-        #self.ui.output_PTE.appendPlainText("vidsub_lst len :" + str(len(vidsub_lst)))
-        #self.ui.output_PTE.appendPlainText(stdout_value)
-        #QApplication.processEvents()
-
-        #self.complete_dialog(vidsub_lst)
 
     def onCountChanged(self, value):
         self.ui.output_PTE.appendPlainText(value)
@@ -217,13 +202,13 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
     def complete_dialog(self, total_vid_lst):        
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
-        msg.setStyleSheet("QLabel{min-width: 200px;}")
+        msg.setStyleSheet("QLabel{min-width: 200px;}")# just for test
 
         msg.setText("Tha Mux Has Completed.")
         msg.setInformativeText(f"You Have Mux {len(total_vid_lst)} mkv file.")
-        msg.setWindowTitle("Complete Massage")
-        video_names = "\n".join(t[0] for t in total_vid_lst)
-        msg.setDetailedText(video_names)
+        msg.setWindowTitle("Complete Massage")        
+        video_names = [t.split('"')[3] for t in total_vid_lst]        
+        msg.setDetailedText("\n".join(video_names))
         msg.setStandardButtons(QMessageBox.Ok)
         msg.setDefaultButton(QMessageBox.Ok)
 
