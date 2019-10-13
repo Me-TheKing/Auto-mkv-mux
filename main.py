@@ -4,9 +4,33 @@ import os.path
 from os import path
 import subprocess
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QApplication, QMessageBox
 from UI.maingui import Ui_Form  # importing our generated file
 
+
+class External(QThread):
+    """
+    Runs a counter thread.
+    """
+    countChanged = pyqtSignal(str)
+    signal_cmd = list()
+
+    def run(self):
+        #print(self.signal_cmd)
+        #########################################
+        #########################################
+        for cmd in self.signal_cmd :
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text = True)
+            while True:
+                output = process.stdout.readline()
+                if output == '' and process.poll() is not None:
+                    break
+                if output:
+                    #self.ui.output_PTE.appendPlainText(output.strip())
+                    self.countChanged.emit(output.strip())
+
+        #self.complete_dialog(vidsub_lst)
 
 class MyApp(QtWidgets.QMainWindow, Ui_Form):
     def __init__(self):
@@ -92,7 +116,8 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         ###################################################################################
         ####   here start the main mux LOOP by making the vid_name and it's sub_name   ####
         ###################################################################################
-        # select the sub(s) name for every video and but it in one lst 
+        # select the sub(s) name for every video and but it in one lst
+        cmds = []
         for a_vidsub in vidsub_lst:
             # set the name of "vid_name" and make a list of it sub(s) name
             vid_name, *subs_vid_lst = a_vidsub             
@@ -106,22 +131,33 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
             full_dest_vid_path = self.add_quote(dest_vid_path + vid_name)
             vid_name = self.add_quote(vid_name)            
             ####### new change 03:49am 09-10-2019 ######
-            option_code = f"--forced-track 0:{option_forced_track} --default-track 0:{option_default_track} --track-name 0:{option_track_name} --sync 0:{option_delay}"            
-            print(f"{self.mkvmerge_path} -o {full_dest_vid_path} {vid_name} {option_code} {sub_name}")
-            returncode = subprocess.Popen(f"{self.mkvmerge_path} -o {full_dest_vid_path} {vid_name} {option_code} {sub_name}")
-            #returncode = subprocess.Popen('"'+self.mkvmerge_path +'" -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-            ############################################
-            # the index 0 is to read only the stdout info
-            stdout_value = returncode.communicate()[0]
-            print(returncode.stdout)
-            self.ui.output_PTE.appendPlainText("vidsub_lst len :" + str(len(vidsub_lst)))
-            self.ui.output_PTE.appendPlainText(stdout_value)
-            QApplication.processEvents()
+            option_code = f"--forced-track 0:{option_forced_track} --default-track 0:{option_default_track} --track-name 0:{option_track_name} --sync 0:{option_delay}"
 
-        self.complete_dialog(vidsub_lst)
+            cmds.append(f"{self.mkvmerge_path} -o {full_dest_vid_path} {vid_name} {option_code} {sub_name}")
+        print(cmds)
+        self.calc = External()
+        #self.calc.countChanged.connect(lambda: self.onCountChanged(cmd))
+        self.calc.signal_cmd = cmds
+        self.calc.countChanged.connect(self.onCountChanged)
+        self.calc.start()
+
+        #self.calc.wait()
+        #returncode = subprocess.Popen(f"{self.mkvmerge_path} -o {full_dest_vid_path} {vid_name} {option_code} {sub_name}")
+        #returncode = subprocess.Popen('"'+self.mkvmerge_path +'" -o "'+ full_dest_vid_path +'" "' + vid_name + option_code + sub_name, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        ############################################
+        # the index 0 is to read only the stdout info
+        #stdout_value = returncode.communicate()[0]
+        #print(returncode.stdout)
+        #self.ui.output_PTE.appendPlainText("vidsub_lst len :" + str(len(vidsub_lst)))
+        #self.ui.output_PTE.appendPlainText(stdout_value)
+        #QApplication.processEvents()
+
+        #self.complete_dialog(vidsub_lst)
+
+    def onCountChanged(self, value):
+        self.ui.output_PTE.appendPlainText(value)
 
     def add_quote(self, str_name):
-        print(f'"{str_name}"')
         return f'"{str_name}"'
 
     def sub_name_lst(self, a_sub, sub_name, option_language):
