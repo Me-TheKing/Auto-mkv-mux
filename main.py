@@ -29,6 +29,7 @@ class External(QThread):
         
         self.finished.emit(self.signal_cmd)
 
+
 class MyApp(QtWidgets.QMainWindow, Ui_Form):
     def __init__(self):
         super(MyApp, self).__init__()
@@ -94,6 +95,10 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         return (vidsub_lst)
 
     def start_mux(self):
+        self.ui.search_btn.setEnabled(False)
+        self.ui.start_btn.setEnabled(False)
+        self.ui.search_output_btn.setEnabled(False)
+
         self.ui.output_PTE.setPlainText("")       
         # read the options from the Ui_Form or ui
         option_forced_track = str(self.ui.forced_cbox.currentText())
@@ -199,7 +204,11 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
 
         msg.exec_()
 
-    def complete_dialog(self, total_vid_lst):        
+    def complete_dialog(self, total_vid_lst):
+        self.ui.search_btn.setEnabled(True)
+        self.ui.start_btn.setEnabled(True)
+        self.ui.search_output_btn.setEnabled(True)
+
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
         msg.setStyleSheet("QLabel{min-width: 200px;}")# just for test
