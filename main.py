@@ -11,20 +11,20 @@ from UI.maingui import Ui_Form  # importing our generated file
 
 class External(QThread):
     """
-    Runs a mux thread and output the result in realtime.    
+    Runs a mux thread and output the result in realtime.
     """
     countChanged = pyqtSignal(str)
     signal_cmd = list()
     finished = pyqtSignal(list)
 
-    def run(self):        
+    def run(self):
         for cmd in self.signal_cmd :
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, text = True)
             while True:
                 output = process.stdout.readline()
                 if output == '' and process.poll() is not None:
                     break
-                if output:                    
+                if output:
                     self.countChanged.emit(output.strip())
         
         self.finished.emit(self.signal_cmd)
@@ -35,7 +35,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         super(MyApp, self).__init__()
         self.ui = Ui_Form()
         self.ui.setupUi(self)
-        ##### my set var ####        
+        ##### my set var ####
         self.video_ext = ["mp4", "mkv", "avi"]
         self.sub_ext = ["srt", "ass", "txt", "ssa", "sub"]
         self.mkvmerge_path = "C:\\Program Files\\MKVToolNix\\mkvmerge.exe"
@@ -59,7 +59,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
             file_path = str(QFileDialog.getExistingDirectory(self, "Select Directory", options=QFileDialog.DontUseNativeDialog))
             self.ui.folder_path_LE.setText(file_path)
             self.ui.output_PTE.setPlainText("")
-            os.chdir(file_path)            
+            os.chdir(file_path)
             self.ui.start_btn.setEnabled(True)
             self.ui.search_output_btn.setEnabled(True)
             self.ui.output_path_LE.setEnabled(True)
@@ -67,8 +67,8 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
            pass
 
     def vid_sub_list(self, my_files):
-        videos = []        
-        subs = []        
+        videos = []
+        subs = []
         for a_file in my_files:
             ext = a_file[-3:]
 
@@ -77,9 +77,9 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
             elif ext in self.sub_ext:
                 subs.append(a_file)
 
-        # see if there is a sub file match the name of a video file 
+        # see if there is a sub file match the name of a video file
         # and then set a list with the video name and there sub(s) in 2D list
-        vidsub_lst = []        
+        vidsub_lst = []
         for vid in videos:
             subs_for_vid = []
             subs_for_vid.append(vid)
@@ -91,7 +91,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
                 vidsub_lst.append(subs_for_vid)
             else:
                 print("no sub for this video!")
-        
+
         return (vidsub_lst)
 
     def start_mux(self):
@@ -99,17 +99,17 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         self.ui.start_btn.setEnabled(False)
         self.ui.search_output_btn.setEnabled(False)
 
-        self.ui.output_PTE.setPlainText("")       
+        self.ui.output_PTE.setPlainText("")
         # read the options from the Ui_Form or ui
         option_forced_track = str(self.ui.forced_cbox.currentText())
         option_default_track = str(self.ui.default_cbox.currentText())
         option_track_name = str(self.ui.name_LE.text())
         option_language = str(self.ui.language_cbox.currentText())
-        option_delay = str(self.ui.delay_LE.text())        
+        option_delay = str(self.ui.delay_LE.text())
 
         # the output folder
         dest_vid_path = self.output_directory()
-        
+
         # get the name of the video(s) and sub(s)
         my_current_dic = os.getcwd()
         my_files = os.listdir(my_current_dic)
@@ -122,16 +122,16 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         cmds = []
         for a_vidsub in vidsub_lst:
             # set the name of "vid_name" and make a list of it sub(s) name
-            vid_name, *subs_vid_lst = a_vidsub             
+            vid_name, *subs_vid_lst = a_vidsub
             # use the sub(s) name in subs_vid_lst and make a one singel name "sub_name" to use in the subprocess
-            ##############################            
+            ##############################
             sub_name = []
             for a_sub in subs_vid_lst :
                 sub_name = self.sub_name_lst(a_sub, sub_name, option_language)
 
             sub_name = " ".join(sub_name)
             full_dest_vid_path = self.add_quote(dest_vid_path + vid_name)
-            vid_name = self.add_quote(vid_name)            
+            vid_name = self.add_quote(vid_name)
             ####### new change 03:49am 09-10-2019 ######
             option_code = f"--forced-track 0:{option_forced_track} --default-track 0:{option_default_track} --track-name 0:{option_track_name} --sync 0:{option_delay}"
             cmds.append(f"{self.mkvmerge_path} -o {full_dest_vid_path} {vid_name} {option_code} {sub_name}")
@@ -153,8 +153,8 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
     def sub_name_lst(self, a_sub, sub_name, option_language):
         # see why the add_quote not working with a_sub????
         #self.add_quote(a_sub)
-        a_sub_split = a_sub.split(".")                
-        # name.ext OR name.order.ext          
+        a_sub_split = a_sub.split(".")
+        # name.ext OR name.order.ext
         if len(a_sub_split) in (2, 3):
             sub_name.append(f'--language 0:{option_language} "{a_sub}"')
         # name.order.team.ext
@@ -172,7 +172,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
         return sub_name
 
     def output_directory(self):
-        # set the output Folder        
+        # set the output Folder
         if len(self.ui.output_path_LE.text()) == 0:
             try:
                 os.makedirs("Done")
@@ -191,7 +191,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
 
         return output_path
 
-    def showdialog(self):        
+    def showdialog(self):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Warning)
 
@@ -215,8 +215,8 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
 
         msg.setText("Tha Mux Has Completed.")
         msg.setInformativeText(f"You Have Mux {len(total_vid_lst)} mkv file.")
-        msg.setWindowTitle("Complete Massage")        
-        video_names = [t.split('"')[3] for t in total_vid_lst]        
+        msg.setWindowTitle("Complete Massage")
+        video_names = [t.split('"')[3] for t in total_vid_lst]
         msg.setDetailedText("\n".join(video_names))
         msg.setStandardButtons(QMessageBox.Ok)
         msg.setDefaultButton(QMessageBox.Ok)
