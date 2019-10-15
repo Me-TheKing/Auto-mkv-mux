@@ -146,6 +146,7 @@ class MyApp(QtWidgets.QMainWindow, Ui_Form):
 
     def onCountChanged(self, value):
         self.ui.output_PTE.appendPlainText(value)
+        self.ui.output_PTE.ensureCursorVisible()
 
     def add_quote(self, str_name):
         return f'"{str_name}"'
