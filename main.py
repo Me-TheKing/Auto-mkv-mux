@@ -30,7 +30,7 @@ class External(QThread):
         self.finished.emit(self.signal_cmd)
 
 
-class MyApp(QtWidgets.QMainWindow, Ui_Form):
+class MyApp(QtWidgets.QWidget):
     def __init__(self):
         super(MyApp, self).__init__()
         self.ui = Ui_Form()
